@@ -3,25 +3,18 @@ package mongo.writeCmd.test;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 
-public class UpdateOne implements TestFunc {
-
-	@Override
-	public void setup(DBCollection coll) {
-		coll.drop();
-		coll.insert(new BasicDBObject("x", 1));
-	}
-
-	@Override
-	public void cleanup(DBCollection coll) {
-		// TODO Auto-generated method stub
-
-	}
+public class Insert1MB implements TestFunc {
 
 	@Override
 	public void run(DBCollection coll, WriteConcernMode mode) {
-		for (int x = 0; x < 1000; x++) {
-			coll.update(new BasicDBObject("x", 1),
-					new BasicDBObject("$inc", new BasicDBObject("x", 1)));
+		StringBuilder strBuilder = new StringBuilder(1024);
+		for (int x = 0; x < 1024*1024; x++) {
+			strBuilder.append('a');
+		}
+		
+		final String str = strBuilder.toString();
+		for (int x = 0; x < 10; x++) {
+			coll.insert(new BasicDBObject("x", str));
 			
 			if (mode == WriteConcernMode.GLEEveryWrite) {
 				coll.getDB().command(new BasicDBObject("getLastError", 1));
@@ -35,8 +28,16 @@ public class UpdateOne implements TestFunc {
 
 	@Override
 	public String getName() {
-		// TODO Auto-generated method stub
-		return "updateOne";
+		return "Insert1MB";
 	}
 
+	@Override
+	public void setup(DBCollection coll) {
+		// no-op
+	}
+
+	@Override
+	public void cleanup(DBCollection coll) {
+		// no-op
+	}
 }

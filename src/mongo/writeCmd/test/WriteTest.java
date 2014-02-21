@@ -45,23 +45,23 @@ public class WriteTest {
 		}
 	}
 	
-	static void runTest(TestFunc test, DBCollection coll, int loops) {
+	static void runTest(TestFunc test, DBCollection coll, WriteConcernMode mode, int loops) {
 		Aggregator agg = new Aggregator();
 		
 		for (int i = 0; i < loops; i++) {
 			test.setup(coll);
 			
 			final long start = System.nanoTime();
-			test.run(coll);
+			test.run(coll, mode);
 			final long end = System.nanoTime();
 			agg.add((end - start) / 1000 / 1000);
-			
+
 			test.cleanup(coll);
 			System.out.println("REN_raw: " + ((end - start) / 1000 /1000));
 		}
 		
 		Stats stats = agg.computeStats();
-		System.out.println("REN: avg|sd, " + test.getName() + ", " + stats.mean + ", " + stats.sd);
+		System.out.println("REN: avg|sd " + test.getName() + ", " + stats.mean + ", " + stats.sd);
 	}
 	
 	/**
@@ -70,6 +70,7 @@ public class WriteTest {
 	public static void main(String[] args) {
 		final String host = args[0];
 		final int port = Integer.parseInt(args[1]);
+		final Boolean useWriteCmd = Integer.parseInt(args[2]) == 1;
 		
 		MongoClient conn;
 		try {
@@ -84,11 +85,28 @@ public class WriteTest {
 		db.command(new BasicDBObject("dropDatabase", 1));
 		
 		DBCollection coll = db.getCollection("user");
-		runTest(new InsertEmpty(), coll, 100);
-		runTest(new Insert1k(), coll, 100);
-		runTest(new UpdateOne(), coll, 100);
-		runTest(new UpdateMulti(), coll, 100);
-		runTest(new RemoveOne(), coll, 100);
+		List<TestFunc> tests = new ArrayList<TestFunc>();
+		tests.add(new InsertEmpty());
+		tests.add(new Insert1k());
+		tests.add(new Insert1MB());
+		tests.add(new UpdateOne());
+		tests.add(new UpdateMulti());
+		tests.add(new RemoveOne());
+
+		for (TestFunc test: tests) {
+			if (useWriteCmd) {
+				System.out.println("REN: WRITE CMD");
+				coll.setWriteConcern(WriteConcern.ACKNOWLEDGED);
+				runTest(test, coll, WriteConcernMode.None, 100);
+			}
+			
+			System.out.println("REN: LEGACY GLE EVERY WRITE"); 
+			coll.setWriteConcern(WriteConcern.UNACKNOWLEDGED);
+			runTest(test, coll, WriteConcernMode.GLEEveryWrite, 100);
+			
+			System.out.println("REN: LEGACY GLE AFTER ALL WRITES");
+			runTest(test, coll, WriteConcernMode.GLEAfterBatch, 100);
+		}
 	}
 
 }

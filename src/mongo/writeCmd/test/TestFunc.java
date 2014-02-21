@@ -6,6 +6,6 @@ public interface TestFunc {
 	void setup(DBCollection coll);
 	void cleanup(DBCollection coll);
 	
-	void run(DBCollection coll);
+	void run(DBCollection coll, WriteConcernMode mode);
 	String getName();
 }
