@@ -45,7 +45,11 @@ public class WriteTest {
 		}
 	}
 	
-	static void runTest(TestFunc test, DBCollection coll, WriteConcernMode mode, int loops) {
+	static void runTest(TestFunc test,
+						DBCollection coll,
+						WriteConcernMode mode,
+						String prefix,
+						int loops) {
 		Aggregator agg = new Aggregator();
 		
 		for (int i = 0; i < loops; i++) {
@@ -61,7 +65,8 @@ public class WriteTest {
 		}
 		
 		Stats stats = agg.computeStats();
-		System.out.println("REN: avg|sd " + test.getName() + ", " + stats.mean + ", " + stats.sd);
+		System.out.println("REN: " + prefix + " " + test.getName() +
+				", " + stats.mean + ", " + stats.sd);
 	}
 	
 	/**
@@ -71,19 +76,19 @@ public class WriteTest {
 		final String host = args[0];
 		final int port = Integer.parseInt(args[1]);
 		final Boolean useWriteCmd = Integer.parseInt(args[2]) == 1;
+		final String prefix = args[3];
 		
 		MongoClient conn;
 		try {
 			conn = new MongoClient(host, port);
 		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return;
 		}
 
 		DB db = conn.getDB("test");
 		db.command(new BasicDBObject("dropDatabase", 1));
-		
+
 		DBCollection coll = db.getCollection("user");
 		List<TestFunc> tests = new ArrayList<TestFunc>();
 		tests.add(new InsertEmpty());
@@ -95,18 +100,13 @@ public class WriteTest {
 
 		for (TestFunc test: tests) {
 			if (useWriteCmd) {
-				System.out.println("REN: WRITE CMD");
 				coll.setWriteConcern(WriteConcern.ACKNOWLEDGED);
-				runTest(test, coll, WriteConcernMode.None, 100);
+				runTest(test, coll, WriteConcernMode.None, prefix + "_writeCmd", 100);
 			}
-			
-			System.out.println("REN: LEGACY GLE EVERY WRITE"); 
+
 			coll.setWriteConcern(WriteConcern.UNACKNOWLEDGED);
-			runTest(test, coll, WriteConcernMode.GLEEveryWrite, 100);
-			
-			System.out.println("REN: LEGACY GLE AFTER ALL WRITES");
-			runTest(test, coll, WriteConcernMode.GLEAfterBatch, 100);
+			runTest(test, coll, WriteConcernMode.GLEEveryWrite, prefix + "_gleEveryWrite", 100);
+			runTest(test, coll, WriteConcernMode.GLEAfterBatch, prefix + "_gleAfter", 100);
 		}
 	}
-
 }

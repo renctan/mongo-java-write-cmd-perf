@@ -1,13 +1,10 @@
-var WRITE_CMD_CMD = ['java', '-jar', 'writetest.jar', 'localhost', '30999', '1'];
-var LEGACY_CMD = ['java', '-jar', 'writetest.jar', 'localhost', '30999', '0'];
-
 var st = new ShardingTest({ shards: 1, mongos: 1 });
-run.apply(null, WRITE_CMD_CMD);
+run('java', '-jar', 'writetest.jar', 'localhost', '30999', '1', '2.6/2.6');
 st.stop();
 
 var options = { shardOptions: { binVersion: '2.4' }, separateConfig: true };
 st = new ShardingTest({ shards: 1, mongos: 1, other: options });
-run.apply(null, WRITE_CMD_CMD);
+run('java', '-jar', 'writetest.jar', 'localhost', '30999', '1', '2.6/2.4');
 st.stop();
 
 options = {
@@ -17,6 +14,6 @@ options = {
 };
 
 st = new ShardingTest({ shards: 1, mongos: 1, other: options });
-run.apply(null, LEGACY_CMD);
+run('java', '-jar', 'writetest.jar', 'localhost', '30999', '0', '2.4/2.4');
 st.stop();
 
