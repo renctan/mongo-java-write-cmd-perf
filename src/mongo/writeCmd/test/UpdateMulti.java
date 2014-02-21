@@ -20,7 +20,7 @@ public class UpdateMulti implements TestFunc {
 
 	@Override
 	public void run(DBCollection coll, WriteConcernMode mode) {
-		for (int x = 0; x < 1000; x++) {
+		for (int x = 0; x < 100; x++) {
 			coll.update(new BasicDBObject(),
 						new BasicDBObject("$inc", new BasicDBObject("x", 1)),
 						false, // upsert
